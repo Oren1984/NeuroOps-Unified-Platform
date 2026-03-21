@@ -127,7 +127,7 @@ services:
     networks:
       - neuroops-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -178,7 +178,7 @@ services:
       - frontend
       - gateway-api
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/api/gateway/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/api/gateway/health"]
       interval: 20s
       timeout: 5s
       retries: 3
@@ -198,10 +198,12 @@ services:
       context: ./NeuroOps-Autopilot-System/backend
       dockerfile: Dockerfile
     container_name: neuroops-autopilot-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
       POSTGRES_DB: neuroops
       POSTGRES_SCHEMA: autopilot
+      PGOPTIONS: "-c search_path=autopilot,public"
       BACKEND_PORT: "8000"
       ENVIRONMENT: ${PLATFORM_ENV:-production}
     expose:
@@ -212,7 +214,7 @@ services:
     networks:
       - neuroops-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -235,6 +237,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
       POSTGRES_SCHEMA: control_room
+      PGOPTIONS: "-c search_path=control_room,public"
       DEMO_MODE: "true"
       STORY_MODE: "false"
       ENVIRONMENT: ${PLATFORM_ENV:-production}
@@ -246,7 +249,7 @@ services:
     networks:
       - neuroops-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -276,7 +279,7 @@ services:
     networks:
       - neuroops-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -303,7 +306,7 @@ services:
     networks:
       - neuroops-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -326,6 +329,7 @@ services:
     container_name: neuroops-warehouse-api
     command: python scripts/run_api.py
     environment:
+      PYTHONPATH: /app
       LLM_PROVIDER: ${LLM_PROVIDER:-rule_based}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -338,7 +342,7 @@ services:
     networks:
       - neuroops-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 20s
       timeout: 10s
       retries: 3
@@ -445,6 +449,7 @@ services:
     container_name: neuroops-warehouse-copilot
     command: python scripts/run_dashboard.py
     environment:
+      PYTHONPATH: /app
       STREAMLIT_SERVER_HEADLESS: "true"
       STREAMLIT_SERVER_ENABLE_CORS: "false"
       STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION: "false"

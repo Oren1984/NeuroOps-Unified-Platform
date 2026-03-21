@@ -11,7 +11,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Bot, MonitorCheck, Activity,
+  LayoutDashboard, MonitorCheck, Activity,
   RefreshCcw, Briefcase, BarChart2, Package,
   Server, ShieldCheck, AlertTriangle, TrendingUp,
   TrendingDown, Minus, ArrowRight, Loader, Zap,
@@ -25,7 +25,6 @@ import MetricCard from '../../components/shared/MetricCard.jsx'
 // Module definitions
 // ---------------------------------------------------------------------------
 const MODULES = [
-  { id: 'autopilot',        label: 'AI Autopilot',      path: '/autopilot',        icon: Bot,         color: '#3fb950', description: 'Autonomous operations monitoring & AI decision engine.', serviceKey: 'autopilot' },
   { id: 'control-room',     label: 'Control Room',      path: '/control-room',     icon: MonitorCheck, color: '#d29922', description: 'AI-powered incident intelligence with dependency mapping.', serviceKey: 'control_room' },
   { id: 'live-control',     label: 'Live Control',      path: '/live-control',     icon: Activity,    color: '#39c5cf', description: 'Real-time operations dashboard with live metrics.', serviceKey: 'live_control' },
   { id: 'incident-replay',  label: 'Incident Replay',   path: '/incident-replay',  icon: RefreshCcw,  color: '#bc8cff', description: 'Step through historical incidents with timeline playback.', serviceKey: 'incident_replay' },

@@ -11,7 +11,20 @@
       "Bash(find /c/Users/ORENS/NeuroOps-Unified-Platform -maxdepth 3 \\\\\\(-name *.bak -o -name *.tmp -o -name *test*.py -o -name *test*.js \\\\\\) -not -path */node_modules/* -not -path */.git/*)",
       "Bash(du -sh NeuroOps-*/ apps/ services/ docs/ monitoring/ nginx/ postgres/)",
       "Bash(git -C \"/c/Users/ORENS/NeuroOps-Unified-Platform\" log --oneline)",
-      "Bash(find C:/Users/ORENS/NeuroOps-Unified-Platform -maxdepth 2 -name *.tmp -o -name *.bak -o -name *.orig)"
+      "Bash(find C:/Users/ORENS/NeuroOps-Unified-Platform -maxdepth 2 -name *.tmp -o -name *.bak -o -name *.orig)",
+      "Bash(find C:/Users/ORENS/NeuroOps-Unified-Platform/NeuroOps-Autopilot-System/backend -name *.py)",
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(python -c \"import sys,json; h=json.load\\(sys.stdin\\); [print\\(l[''''Output'''']\\) for l in h.get\\(''''Log'''',[]\\)]\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(echo \"exit8000: $?\")",
+      "Bash(echo \"exit8008: $?\")",
+      "Bash(find C:UsersORENSNeuroOps-Unified-Platform -type f -name *autopilot*)",
+      "Bash(curl -s http://localhost/api/autopilot/health)",
+      "Bash(curl -s http://localhost/api/autopilot/api/events?limit=5)",
+      "Bash(curl -s http://localhost/api/autopilot/api/services)",
+      "Bash(curl -s http://localhost/api/autopilot/api/events?limit=3)",
+      "Bash(curl:*)"
     ]
   }
 }

@@ -6,7 +6,6 @@ import { useAuth } from '../../auth/AuthContext.jsx'
 
 const ROUTE_LABELS = {
   '/dashboard':         'Dashboard',
-  '/autopilot':         'AI Autopilot System',
   '/control-room':      'Control Room',
   '/live-control':      'Live Control',
   '/incident-replay':   'Incident Replay',

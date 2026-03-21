@@ -1,7 +1,7 @@
 import React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import {
-  LayoutDashboard, Bot, MonitorCheck, Activity,
+  LayoutDashboard, MonitorCheck, Activity,
   RefreshCcw, Briefcase, BarChart2, Package, Zap
 } from 'lucide-react'
 
@@ -13,14 +13,6 @@ const MODULES = [
     icon: LayoutDashboard,
     color: '#1f6feb',
     description: 'Platform overview',
-  },
-  {
-    id: 'autopilot',
-    label: 'Autopilot',
-    path: '/autopilot',
-    icon: Bot,
-    color: '#3fb950',
-    description: 'AI autonomous ops',
   },
   {
     id: 'control-room',

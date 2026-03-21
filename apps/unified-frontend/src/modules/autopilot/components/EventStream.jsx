@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { AlertTriangle, Info, CheckCircle, XCircle, Zap } from 'lucide-react'
 
 function getSeverityConfig(severity) {
-  switch ((severity || '').toLowerCase()) {
+  switch (String(severity || '').toLowerCase()) {
     case 'critical': return { color: 'var(--red)', Icon: XCircle }
     case 'warning': return { color: 'var(--yellow)', Icon: AlertTriangle }
     case 'success': return { color: 'var(--green)', Icon: CheckCircle }
@@ -58,7 +58,7 @@ export default function EventStream({ events = [] }) {
           </div>
         ) : (
           visible.map((ev, i) => {
-            const sev = ev.severity || ev.type || ev.level || 'info'
+            const sev = ev.event_type || ev.type || ev.level || ev.severity || 'info'
             const { color, Icon } = getSeverityConfig(sev)
             return (
               <div key={ev.id || i} style={{

@@ -33,7 +33,7 @@ export default function SummaryCard({ events = [], decisions = [], agentActions 
 
   const recentIncidents = events
     .filter(e => {
-      const sev = (e.severity || e.type || '').toLowerCase()
+      const sev = (e.event_type || e.type || '').toLowerCase()
       return sev === 'critical' || sev === 'warning' || sev === 'anomaly'
     })
     .slice(0, 5)

@@ -2,7 +2,6 @@ import React from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell.jsx'
 import Dashboard from '../modules/dashboard/Dashboard.jsx'
-import AutopilotPage from '../modules/autopilot/index.jsx'
 import ControlRoomPage from '../modules/control-room/index.jsx'
 import LiveControlPage from '../modules/live-control/index.jsx'
 import IncidentReplayPage from '../modules/incident-replay/index.jsx'
@@ -43,7 +42,6 @@ export default function AppRouter() {
               <Routes>
                 <Route path="/"                  element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard"         element={<Dashboard />} />
-                <Route path="/autopilot"         element={<AutopilotPage />} />
                 <Route path="/control-room"      element={<ControlRoomPage />} />
                 <Route path="/live-control"      element={<LiveControlPage />} />
                 <Route path="/incident-replay"   element={<IncidentReplayPage />} />

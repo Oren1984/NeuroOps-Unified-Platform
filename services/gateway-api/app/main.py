@@ -39,7 +39,7 @@ _EVENTS_RETENTION_DAYS: int = int(os.environ.get("EVENTS_RETENTION_DAYS", "30"))
 SERVICE_HEALTH_ENDPOINTS: dict[str, str] = {
     "autopilot":         "http://autopilot-api:8000/health",
     "control_room":      "http://control-room-api:8000/api/health",
-    "live_control":      "http://live-control-api:8000/health",
+    "live_control":      "http://live-control-api:8000/api/health",
     "incident_replay":   "http://incident-replay-api:8000/health",
     "warehouse_api":     "http://warehouse-api:8000/health",
     "career_agent":      "http://career-agent:8501/healthz",

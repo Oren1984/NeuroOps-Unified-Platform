@@ -1,0 +1,465 @@
+version: '3.8'
+
+# =============================================================================
+# NeuroOps Unified Platform — Main Deployment Compose File  (Phase 2)
+# =============================================================================
+#
+# DEPLOYMENT PROFILES
+# -------------------
+#   Default (no profile flags):
+#     Starts the full operational core: all 4 ops modules + gateway + frontend
+#     + nginx + postgres.  This is the recommended server deployment.
+#
+#     docker compose up -d
+#
+#   --profile lite
+#     Smallest viable platform: gateway + frontend + nginx + postgres only.
+#     No operational modules. Use for: gateway/UI dev, resource-constrained VMs.
+#
+#     docker compose --profile lite up -d
+#
+#   --profile heavy
+#     Adds the AI/data-heavy services: warehouse API + Copilot + Chroma,
+#     Career Agent (uses LLMs), Insight Engine.
+#     Requires ~4 GB additional RAM. Add on top of the default or lite profile.
+#
+#     docker compose --profile heavy up -d          # heavy only
+#     docker compose --profile heavy up -d          # full = default + heavy
+#
+#   --profile n8n
+#     Adds the n8n workflow automation engine (optional, heavy-ish).
+#
+#     docker compose --profile n8n up -d
+#
+#   Combined (everything):
+#     docker compose --profile heavy --profile n8n up -d
+#
+# QUICK REFERENCE (see Makefile for shortcuts):
+#   make lite     → lite profile
+#   make core     → default (recommended server mode)
+#   make full     → core + heavy + n8n
+#   make down     → stop all
+# =============================================================================
+
+name: neuroops-unified
+
+networks:
+  neuroops-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  career-agent-data:
+  insight-engine-data:
+  warehouse-data:
+  chroma-data:
+  n8n-data:
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — shared relational database
+  # Always starts (no profile tag = included in all modes)
+  # RAM impact: ~50 MB
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: neuroops-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-neuroops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neuroops_dev_2024}
+      POSTGRES_DB: neuroops
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_EXPOSE_PORT:-5432}:5432"
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neuroops} -d neuroops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Gateway API — central intelligence + auth + health aggregation
+  # Always starts (no profile tag)
+  # RAM impact: ~80 MB
+  # ---------------------------------------------------------------------------
+  gateway-api:
+    build:
+      context: ./services/gateway-api
+      dockerfile: Dockerfile
+    container_name: neuroops-gateway
+    environment:
+      ENVIRONMENT: ${PLATFORM_ENV:-production}
+      PLATFORM_USER: ${PLATFORM_USER:-admin}
+      PLATFORM_PASSWORD: ${PLATFORM_PASSWORD:-neuroops2024}
+      PLATFORM_SECRET: ${PLATFORM_SECRET:-neuroops-platform-secret-change-in-production}
+      TOKEN_EXPIRE_HOURS: ${TOKEN_EXPIRE_HOURS:-8}
+    ports:
+      - "8000:8000"
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # ---------------------------------------------------------------------------
+  # Unified Frontend — React + Vite built static (served via nginx)
+  # Always starts (no profile tag)
+  # RAM impact: ~10 MB (static nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./apps/unified-frontend
+      dockerfile: Dockerfile
+    container_name: neuroops-frontend
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE=/api
+    networks:
+      - neuroops-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ---------------------------------------------------------------------------
+  # Nginx — reverse proxy (sole public-facing service)
+  # Always starts (no profile tag)
+  # RAM impact: ~10 MB
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: neuroops-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - neuroops-network
+    depends_on:
+      - frontend
+      - gateway-api
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/api/gateway/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+
+  # ---------------------------------------------------------------------------
+  # Autopilot API — FastAPI backend (default profile = core ops)
+  # RAM impact: ~150 MB
+  # ---------------------------------------------------------------------------
+  autopilot-api:
+    build:
+      context: ./NeuroOps-Autopilot-System/backend
+      dockerfile: Dockerfile
+    container_name: neuroops-autopilot-api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
+      POSTGRES_DB: neuroops
+      POSTGRES_SCHEMA: autopilot
+      BACKEND_PORT: "8000"
+      ENVIRONMENT: ${PLATFORM_ENV:-production}
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Control Room API — FastAPI backend (default profile = core ops)
+  # RAM impact: ~150 MB
+  # ---------------------------------------------------------------------------
+  control-room-api:
+    build:
+      context: ./NeuroOps-Control-Room-System
+      dockerfile: docker/backend.Dockerfile
+    container_name: neuroops-control-room-api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
+      POSTGRES_SCHEMA: control_room
+      DEMO_MODE: "true"
+      STORY_MODE: "false"
+      ENVIRONMENT: ${PLATFORM_ENV:-production}
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Live Control API — FastAPI backend (default profile = core ops)
+  # RAM impact: ~120 MB
+  # ---------------------------------------------------------------------------
+  live-control-api:
+    build:
+      context: ./NeuroOps-live-Control-System
+      dockerfile: docker/backend.Dockerfile
+    container_name: neuroops-live-control-api
+    environment:
+      - ENVIRONMENT=${PLATFORM_ENV:-production}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./NeuroOps-live-Control-System/data:/data:ro
+    ports:
+      - "8003:8000"
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Incident Replay API — FastAPI backend (default profile = core ops)
+  # RAM impact: ~120 MB
+  # ---------------------------------------------------------------------------
+  incident-replay-api:
+    build:
+      context: ./NeuroOps-Incident-Replay-System/backend
+      dockerfile: Dockerfile
+    container_name: neuroops-incident-replay-api
+    environment:
+      - ENVIRONMENT=${PLATFORM_ENV:-production}
+    ports:
+      - "8004:8000"
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Warehouse API — FastAPI backend for warehouse copilot
+  # Profile: heavy (resource-intensive: loads LLMs + Chroma)
+  # RAM impact: ~400–800 MB depending on LLM provider
+  # ---------------------------------------------------------------------------
+  warehouse-api:
+    build:
+      context: ./NeuroOps-Warehouse-Copilot-System
+      dockerfile: Dockerfile
+    container_name: neuroops-warehouse-api
+    command: python scripts/run_api.py
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-rule_based}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      APP_ENV: ${PLATFORM_ENV:-production}
+    volumes:
+      - warehouse-data:/app/data
+      - chroma-data:/app/chroma_db
+    ports:
+      - "8007:8000"
+    networks:
+      - neuroops-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    profiles:
+      - heavy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # Career Agent — Streamlit app
+  # Profile: heavy (may use LLMs for semantic scoring)
+  # RAM impact: ~300–600 MB
+  # ---------------------------------------------------------------------------
+  career-agent:
+    build:
+      context: ./NeuroOps-Career-Agent-System
+      dockerfile: Dockerfile
+    container_name: neuroops-career-agent
+    environment:
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_SERVER_ENABLE_CORS: "false"
+      STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION: "false"
+      STREAMLIT_SERVER_PORT: "8501"
+      STREAMLIT_SERVER_BASE_URL_PATH: "/embed/career-agent"
+      GMAIL_ENABLED: "false"
+      GMAIL_MODE: mock
+      ENABLE_FUZZY_DEDUP: "true"
+      ENABLE_SEMANTIC_SCORING: ${ENABLE_SEMANTIC_SCORING:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - career-agent-data:/app/data
+    ports:
+      - "8511:8501"
+    networks:
+      - neuroops-network
+    restart: unless-stopped
+    profiles:
+      - heavy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Insight Engine — Streamlit app
+  # Profile: heavy (uses LLMs + optional n8n)
+  # RAM impact: ~300–600 MB
+  # ---------------------------------------------------------------------------
+  insight-engine:
+    build:
+      context: ./NeuroOps-Insight-Engine-System
+      dockerfile: docker/Dockerfile
+    container_name: neuroops-insight-engine
+    environment:
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_SERVER_ENABLE_CORS: "false"
+      STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION: "false"
+      STREAMLIT_SERVER_PORT: "8501"
+      STREAMLIT_SERVER_BASE_URL_PATH: "/embed/insight-engine"
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://localhost:11434}
+      N8N_ENABLED: "false"
+    volumes:
+      - insight-engine-data:/app/data
+    ports:
+      - "8512:8501"
+    networks:
+      - neuroops-network
+    restart: unless-stopped
+    profiles:
+      - heavy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Warehouse Copilot Dashboard — Streamlit app
+  # Profile: heavy (depends on warehouse-api)
+  # RAM impact: ~300 MB
+  # ---------------------------------------------------------------------------
+  warehouse-copilot:
+    build:
+      context: ./NeuroOps-Warehouse-Copilot-System
+      dockerfile: Dockerfile
+    container_name: neuroops-warehouse-copilot
+    command: python scripts/run_dashboard.py
+    environment:
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_SERVER_ENABLE_CORS: "false"
+      STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION: "false"
+      STREAMLIT_SERVER_PORT: "8501"
+      STREAMLIT_SERVER_BASE_URL_PATH: "/embed/warehouse-copilot"
+      LLM_PROVIDER: ${LLM_PROVIDER:-rule_based}
+      API_URL: http://warehouse-api:8000
+    volumes:
+      - warehouse-data:/app/data
+    ports:
+      - "8513:8501"
+    networks:
+      - neuroops-network
+    depends_on:
+      - warehouse-api
+    restart: unless-stopped
+    profiles:
+      - heavy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # n8n — workflow automation engine
+  # Profile: n8n (opt-in separately from heavy)
+  # Usage: docker compose --profile n8n up -d
+  # RAM impact: ~300 MB
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: neuroops-n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - WEBHOOK_URL=http://localhost:5678
+    volumes:
+      - n8n-data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    networks:
+      - neuroops-network
+    restart: unless-stopped
+    profiles:
+      - n8n
+    deploy:
+      resources:
+        limits:
+          memory: 512M

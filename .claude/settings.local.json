@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/Users/ORENS/NeuroOps-Unified-Platform -maxdepth 2 -type f \\\\\\(-name package.json -o -name requirements.txt -o -name docker-compose.yml -o -name Dockerfile -o -name vite.config.* -o -name next.config.* -o -name tsconfig.json -o -name .env* -o -name README.md \\\\\\))",
+      "Bash(find /c/Users/ORENS/NeuroOps-Unified-Platform/NeuroOps-Control-Room-System/frontend/src -type f \\\\\\(-name *.jsx -o -name *.tsx \\\\\\))",
+      "Bash(find /c/Users/ORENS/NeuroOps-Unified-Platform/NeuroOps-live-Control-System -type f \\\\\\(-name *.jsx -o -name *.py -o -name *.yml -o -name *.json \\\\\\))",
+      "Bash(find /c/Users/ORENS/NeuroOps-Unified-Platform/NeuroOps-Warehouse-Copilot-System/src/api -type f -name *.py)",
+      "Bash(ls /c/Users/ORENS/NeuroOps-Unified-Platform/*.yml /c/Users/ORENS/NeuroOps-Unified-Platform/.env.example)"
+    ]
+  }
+}

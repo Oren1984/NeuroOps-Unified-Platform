@@ -1,0 +1,172 @@
+# =============================================================================
+# NeuroOps Unified Platform — Development Override
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# What this file changes vs the main compose file:
+#   - frontend:        replaced with Vite dev server (npm run dev, port 5173)
+#   - nginx:           reconfigured to proxy frontend via port 5173 (Vite HMR)
+#   - health checks:   intervals reduced for faster feedback
+#   - warehouse-api:   moved to 'heavy' profile — skip with default dev start
+#   - warehouse-copilot: same — skip unless explicitly requested
+#
+# Light dev start (no warehouse AI/vector services):
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Full dev start (includes warehouse):
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml \
+#     --profile heavy up
+# =============================================================================
+
+version: '3.8'
+
+name: neuroops-unified
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Vite dev server with HMR (replaces the nginx static image)
+  # ---------------------------------------------------------------------------
+  frontend:
+    image: node:20-alpine
+    container_name: neuroops-frontend-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE=/api
+      - VITE_EMBED_BASE=/embed
+    volumes:
+      # Mount source for live-reload; node_modules resolved inside container
+      - ./apps/unified-frontend:/app
+    ports:
+      - "5173:5173"
+    networks:
+      - neuroops-network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Gateway API — reduced health check interval for dev
+  # ---------------------------------------------------------------------------
+  gateway-api:
+    environment:
+      - ENVIRONMENT=development
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Autopilot API — reduced health check interval
+  # ---------------------------------------------------------------------------
+  autopilot-api:
+    environment:
+      ENVIRONMENT: development
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Control Room API — reduced health check interval
+  # ---------------------------------------------------------------------------
+  control-room-api:
+    environment:
+      ENVIRONMENT: development
+      DEMO_MODE: "true"
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Live Control API — reduced health check interval
+  # ---------------------------------------------------------------------------
+  live-control-api:
+    environment:
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Incident Replay API — reduced health check interval
+  # ---------------------------------------------------------------------------
+  incident-replay-api:
+    environment:
+      - ENVIRONMENT=development
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Warehouse API — opt-in in dev (heavy vector/AI dependencies)
+  # Start with: --profile heavy
+  # ---------------------------------------------------------------------------
+  warehouse-api:
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-rule_based}
+      APP_ENV: development
+    profiles:
+      - heavy
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Warehouse Copilot — opt-in in dev (depends on warehouse-api)
+  # Start with: --profile heavy
+  # ---------------------------------------------------------------------------
+  warehouse-copilot:
+    profiles:
+      - heavy
+    depends_on:
+      - warehouse-api
+
+  # ---------------------------------------------------------------------------
+  # Career Agent — reduced health check polling
+  # ---------------------------------------------------------------------------
+  career-agent:
+    environment:
+      STREAMLIT_SERVER_BASE_URL_PATH: "/embed/career-agent"
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      GMAIL_MODE: mock
+
+  # ---------------------------------------------------------------------------
+  # Insight Engine — reduced health check polling
+  # ---------------------------------------------------------------------------
+  insight-engine:
+    environment:
+      STREAMLIT_SERVER_BASE_URL_PATH: "/embed/insight-engine"
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+
+  # ---------------------------------------------------------------------------
+  # Nginx — override upstream to point to Vite dev server on port 5173
+  #
+  # The nginx.conf `upstream frontend` block defaults to `server frontend:80`.
+  # In dev we override it with a runtime config that points to port 5173 and
+  # enables WebSocket pass-through for Vite HMR.
+  #
+  # We mount a dev-specific nginx config that overrides the frontend upstream.
+  # ---------------------------------------------------------------------------
+  nginx:
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/frontend-upstream.conf:ro
+    depends_on:
+      - frontend
+      - gateway-api
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — same as prod, just shorter health check
+  # ---------------------------------------------------------------------------
+  postgres:
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5

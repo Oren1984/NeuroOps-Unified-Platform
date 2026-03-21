@@ -1,0 +1,25 @@
+{
+  "name": "neuroops-unified-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5173"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.3",
+    "recharts": "^2.12.7",
+    "reactflow": "^11.10.4",
+    "cytoscape": "^3.27.0",
+    "lucide-react": "^0.400.0",
+    "axios": "^1.6.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.2.13"
+  }
+}

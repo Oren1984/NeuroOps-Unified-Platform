@@ -1,18 +1,19 @@
 # =============================================================================
-# NeuroOps Unified Platform — Makefile
+# NeuroOps Unified Platform — Makefile  (Phase 4)
 # =============================================================================
 # Usage:
-#   make          → show help
-#   make core     → start core services (ops modules + gateway + UI)
-#   make lite     → start minimal: gateway + frontend + nginx + postgres only
-#   make full     → start everything (core + heavy AI services + n8n)
-#   make heavy    → start heavy AI services on top of core
-#   make n8n      → add n8n to core
-#   make down     → stop all services
-#   make logs     → tail all service logs
-#   make status   → show running containers
-#   make build    → rebuild all images
-#   make reset    → stop, remove volumes, restart core (DESTRUCTIVE)
+#   make              → show help
+#   make core         → start core services (ops modules + gateway + UI)
+#   make lite         → start minimal: gateway + frontend + nginx + postgres only
+#   make full         → start everything (core + heavy AI services + n8n)
+#   make heavy        → start heavy AI services on top of core
+#   make n8n          → add n8n to core
+#   make monitoring   → add Prometheus + Grafana observability stack
+#   make down         → stop all services
+#   make logs         → tail all service logs
+#   make status       → show running containers
+#   make build        → rebuild all images
+#   make reset        → stop, remove volumes, restart core (DESTRUCTIVE)
 # =============================================================================
 
 COMPOSE = docker compose
@@ -20,18 +21,19 @@ FLAGS   =
 
 .DEFAULT_GOAL := help
 
-.PHONY: help core lite full heavy n8n down logs status build build-nc reset ps
+.PHONY: help core lite full heavy n8n monitoring down logs status build build-nc reset ps
 
 help:
 	@echo ""
 	@echo "  NeuroOps Unified Platform"
 	@echo ""
 	@echo "  Deployment Modes:"
-	@echo "    make core    — Recommended: ops modules + gateway + UI + postgres (~1.5 GB RAM)"
-	@echo "    make lite    — Minimal: gateway + frontend + nginx + postgres (~350 MB RAM)"
-	@echo "    make heavy   — Core + AI-heavy services (warehouse, career, insight) (~4+ GB RAM)"
-	@echo "    make full    — Everything including n8n (~5+ GB RAM)"
-	@echo "    make n8n     — Core + n8n automation engine"
+	@echo "    make core       — Recommended: ops modules + gateway + UI + postgres (~1.5 GB RAM)"
+	@echo "    make lite       — Minimal: gateway + frontend + nginx + postgres (~350 MB RAM)"
+	@echo "    make heavy      — Core + AI-heavy services (warehouse, career, insight) (~4+ GB RAM)"
+	@echo "    make full       — Everything including n8n (~5+ GB RAM)"
+	@echo "    make n8n        — Core + n8n automation engine"
+	@echo "    make monitoring — Add Prometheus + Grafana observability stack (~400 MB RAM)"
 	@echo ""
 	@echo "  Operations:"
 	@echo "    make down    — Stop all services"
@@ -63,9 +65,14 @@ full:
 n8n:
 	$(COMPOSE) --profile n8n up -d
 
+## Add Prometheus + Grafana monitoring stack (Phase 4F)
+## Access Grafana at http://localhost:3000, Prometheus at http://localhost:9090
+monitoring:
+	$(COMPOSE) --profile monitoring up -d
+
 ## Stop all services
 down:
-	$(COMPOSE) --profile heavy --profile n8n down
+	$(COMPOSE) --profile heavy --profile n8n --profile monitoring down
 
 ## Tail logs from all running services
 logs:
@@ -80,11 +87,11 @@ ps: status
 
 ## Rebuild all images (with cache)
 build:
-	$(COMPOSE) --profile heavy --profile n8n build
+	$(COMPOSE) --profile heavy --profile n8n --profile monitoring build
 
 ## Rebuild all images (no cache)
 build-nc:
-	$(COMPOSE) --profile heavy --profile n8n build --no-cache
+	$(COMPOSE) --profile heavy --profile n8n --profile monitoring build --no-cache
 
 ## Show gateway health (requires curl)
 health:
@@ -98,5 +105,5 @@ intel:
 reset:
 	@echo "WARNING: This will destroy all data volumes. Press Ctrl+C to cancel, Enter to continue."
 	@read _confirm
-	$(COMPOSE) --profile heavy --profile n8n down -v
+	$(COMPOSE) --profile heavy --profile n8n --profile monitoring down -v
 	$(COMPOSE) up -d

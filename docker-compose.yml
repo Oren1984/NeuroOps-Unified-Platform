@@ -1,7 +1,7 @@
 version: '3.8'
 
 # =============================================================================
-# NeuroOps Unified Platform — Main Deployment Compose File  (Phase 2)
+# NeuroOps Unified Platform — Main Deployment Compose File  (Phase 4 / Hardening)
 # =============================================================================
 #
 # DEPLOYMENT PROFILES
@@ -35,10 +35,18 @@ version: '3.8'
 #     docker compose --profile heavy --profile n8n up -d
 #
 # QUICK REFERENCE (see Makefile for shortcuts):
-#   make lite     → lite profile
-#   make core     → default (recommended server mode)
-#   make full     → core + heavy + n8n
-#   make down     → stop all
+#   make lite       → lite profile
+#   make core       → default (recommended server mode)
+#   make full       → core + heavy + n8n
+#   make monitoring → add Prometheus + Grafana
+#   make down       → stop all
+#
+# PORT EXPOSURE (Hardening):
+#   Only nginx (80/443) exposes host ports by default.
+#   All API services use `expose:` — reachable within Docker network only.
+#   To block postgres external access: set POSTGRES_EXPOSE_PORT= (empty) in .env
+#   Grafana (:3000) and Prometheus (:9090) expose host ports only under --profile monitoring.
+#   n8n (:5678) exposes a host port only under --profile n8n.
 # =============================================================================
 
 name: neuroops-unified
@@ -54,6 +62,8 @@ volumes:
   warehouse-data:
   chroma-data:
   n8n-data:
+  prometheus-data:
+  grafana-data:
 
 services:
 
@@ -89,9 +99,10 @@ services:
           memory: 256M
 
   # ---------------------------------------------------------------------------
-  # Gateway API — central intelligence + auth + health aggregation
+  # Gateway API — central intelligence + auth + health aggregation + events
+  # Phase 3C: DATABASE_URL added for platform_events publishing
   # Always starts (no profile tag)
-  # RAM impact: ~80 MB
+  # RAM impact: ~90 MB
   # ---------------------------------------------------------------------------
   gateway-api:
     build:
@@ -104,8 +115,15 @@ services:
       PLATFORM_PASSWORD: ${PLATFORM_PASSWORD:-neuroops2024}
       PLATFORM_SECRET: ${PLATFORM_SECRET:-neuroops-platform-secret-change-in-production}
       TOKEN_EXPIRE_HOURS: ${TOKEN_EXPIRE_HOURS:-8}
-    ports:
-      - "8000:8000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
+      EVENTS_RETENTION_DAYS: ${EVENTS_RETENTION_DAYS:-30}
+    # No host port binding — access only via nginx at /api/gateway/
+    # Prometheus reaches gateway-api:8000 via the internal Docker network.
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - neuroops-network
     healthcheck:
@@ -113,7 +131,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
     restart: unless-stopped
     deploy:
       resources:
@@ -186,8 +204,8 @@ services:
       POSTGRES_SCHEMA: autopilot
       BACKEND_PORT: "8000"
       ENVIRONMENT: ${PLATFORM_ENV:-production}
-    ports:
-      - "8001:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -220,8 +238,8 @@ services:
       DEMO_MODE: "true"
       STORY_MODE: "false"
       ENVIRONMENT: ${PLATFORM_ENV:-production}
-    ports:
-      - "8002:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -253,8 +271,8 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - ./NeuroOps-live-Control-System/data:/data:ro
-    ports:
-      - "8003:8000"
+    expose:
+      - "8000"
     networks:
       - neuroops-network
     healthcheck:
@@ -280,8 +298,8 @@ services:
     container_name: neuroops-incident-replay-api
     environment:
       - ENVIRONMENT=${PLATFORM_ENV:-production}
-    ports:
-      - "8004:8000"
+    expose:
+      - "8000"
     networks:
       - neuroops-network
     healthcheck:
@@ -315,8 +333,8 @@ services:
     volumes:
       - warehouse-data:/app/data
       - chroma-data:/app/chroma_db
-    ports:
-      - "8007:8000"
+    expose:
+      - "8000"
     networks:
       - neuroops-network
     healthcheck:
@@ -335,6 +353,8 @@ services:
 
   # ---------------------------------------------------------------------------
   # Career Agent — Streamlit app
+  # Phase 3A: Migrated from SQLite to PostgreSQL (career_agent schema).
+  # SQLite data/jobs.db preserved as rollback path.
   # Profile: heavy (may use LLMs for semantic scoring)
   # RAM impact: ~300–600 MB
   # ---------------------------------------------------------------------------
@@ -355,10 +375,14 @@ services:
       ENABLE_SEMANTIC_SCORING: ${ENABLE_SEMANTIC_SCORING:-false}
       LLM_PROVIDER: ${LLM_PROVIDER:-demo}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
     volumes:
       - career-agent-data:/app/data
-    ports:
-      - "8511:8501"
+    expose:
+      - "8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - neuroops-network
     restart: unless-stopped
@@ -371,6 +395,8 @@ services:
 
   # ---------------------------------------------------------------------------
   # Insight Engine — Streamlit app
+  # Phase 3B: PostgreSQL query layer (insight_engine schema).
+  # CSV files remain source of truth; DB is the persistent query layer.
   # Profile: heavy (uses LLMs + optional n8n)
   # RAM impact: ~300–600 MB
   # ---------------------------------------------------------------------------
@@ -389,10 +415,14 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://localhost:11434}
       N8N_ENABLED: "false"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuroops}:${POSTGRES_PASSWORD:-neuroops_dev_2024}@postgres:5432/neuroops
     volumes:
       - insight-engine-data:/app/data
-    ports:
-      - "8512:8501"
+    expose:
+      - "8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - neuroops-network
     restart: unless-stopped
@@ -424,8 +454,8 @@ services:
       API_URL: http://warehouse-api:8000
     volumes:
       - warehouse-data:/app/data
-    ports:
-      - "8513:8501"
+    expose:
+      - "8501"
     networks:
       - neuroops-network
     depends_on:
@@ -437,6 +467,70 @@ services:
       resources:
         limits:
           memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — metrics scraper (Phase 4F monitoring profile)
+  # Profile: monitoring
+  # Usage: docker compose --profile monitoring up -d
+  # RAM impact: ~150 MB
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: neuroops-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - neuroops-network
+    depends_on:
+      - gateway-api
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Grafana — dashboard visualization (Phase 4F monitoring profile)
+  # Profile: monitoring
+  # RAM impact: ~200 MB
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: neuroops-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-neuroops2024}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - neuroops-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ---------------------------------------------------------------------------
   # n8n — workflow automation engine

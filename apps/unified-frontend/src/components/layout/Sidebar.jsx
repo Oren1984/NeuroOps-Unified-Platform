@@ -2,7 +2,7 @@ import React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Bot, MonitorCheck, Activity,
-  RefreshCcw, Briefcase, BarChart2, Package
+  RefreshCcw, Briefcase, BarChart2, Package, Zap
 } from 'lucide-react'
 
 const MODULES = [
@@ -69,6 +69,15 @@ const MODULES = [
     icon: Package,
     color: '#3fb950',
     description: 'Warehouse ops AI',
+  },
+  {
+    id: 'events',
+    label: 'Platform Events',
+    path: '/events',
+    icon: Zap,
+    color: '#39c5cf',
+    description: 'Live event stream',
+    badge: 'LIVE',
   },
 ]
 
@@ -180,8 +189,20 @@ export default function Sidebar() {
                     fontWeight: isActive ? 600 : 400,
                     letterSpacing: '0.01em',
                     lineHeight: '1.3',
+                    display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                     {mod.label}
+                    {mod.badge && (
+                      <span style={{
+                        fontSize: 8, fontWeight: 800, letterSpacing: '0.06em',
+                        padding: '1px 5px', borderRadius: 3,
+                        background: 'rgba(63,185,80,0.15)',
+                        color: '#3fb950',
+                        border: '1px solid rgba(63,185,80,0.3)',
+                      }}>
+                        {mod.badge}
+                      </span>
+                    )}
                   </div>
                   {isActive && (
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
@@ -214,7 +235,7 @@ export default function Sidebar() {
         justifyContent: 'space-between',
       }}>
         <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-          v2.0.0
+          v4.0.0
         </span>
         <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
           © {new Date().getFullYear()}

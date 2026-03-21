@@ -1,6 +1,6 @@
 # NeuroOps Unified Platform — Deployment Guide
 
-> **Platform Version:** 2.0.0 (Phase 2)
+> **Platform Version:** 4.0.0 (Phase 4 — Platform Experience & Hardening)
 > **Updated:** 2026-03-21
 
 ---
@@ -43,6 +43,32 @@ docker compose up -d
 ---
 
 ## Deployment Modes
+
+### Monitoring (Phase 4F) — Prometheus + Grafana
+
+Add Prometheus scraping and Grafana dashboards to any running deployment.
+
+```bash
+docker compose --profile monitoring up -d
+# or
+make monitoring
+```
+
+**Services:** prometheus, grafana
+
+**Ports:** Grafana → 3000, Prometheus → 9090
+
+**Grafana credentials:** admin / neuroops2024 (or `GRAFANA_USER` / `GRAFANA_PASSWORD`)
+
+**Prometheus scrape:** `http://gateway-api:8000/metrics/prometheus` (auto-configured)
+
+**Pre-built dashboard:** "NeuroOps Unified Platform" auto-provisioned on first start.
+
+**Estimated RAM:** ~400 MB additional
+
+> **Note:** The `/metrics/prometheus` endpoint has no auth. On production deployments, restrict access via nginx or firewall.
+
+---
 
 ### Core (Default) — Recommended Server Mode
 
@@ -121,6 +147,80 @@ make n8n
 
 ---
 
+## Phase 3 — New Deployment Notes
+
+### PostgreSQL Schema Map (Phase 3)
+
+PostgreSQL is now the primary DB for 4 schemas. All schemas are created automatically by `01_init.sql` on first container start.
+
+| Schema | Service | Tables | Created by |
+|--------|---------|--------|-----------|
+| `autopilot` | autopilot-api | Managed by Autopilot | Autopilot migrations |
+| `control_room` | control-room-api | Managed by Control Room | Control Room migrations |
+| `career_agent` | career-agent | jobs, scores, status_history | SQLAlchemy `create_all` at startup |
+| `insight_engine` | insight-engine | users, usage_events, system_events, tickets | pandas `to_sql` at startup (idempotent) |
+| `public` | gateway-api + all | platform_meta, platform_events | `01_init.sql` |
+
+### Career Agent SQLite → PostgreSQL Migration
+
+If you have existing Career Agent data in SQLite that you want to preserve:
+
+```bash
+# Ensure postgres is running and healthy
+docker compose up -d postgres
+docker compose exec postgres pg_isready -U neuroops -d neuroops
+
+# Run the one-time migration
+docker compose run --rm career-agent \
+  python scripts/migrate_sqlite_to_postgres.py
+
+# The original SQLite file is preserved — never deleted
+```
+
+The migration is idempotent (safe to run multiple times). Jobs are deduplicated via `unique_hash`.
+
+### Rollback Instructions
+
+**Revert Career Agent to SQLite:**
+```yaml
+# In docker-compose.yml, under career-agent → environment:
+# Remove or comment out:
+# DATABASE_URL: postgresql://...
+```
+
+**Revert Insight Engine to SQLite:**
+```yaml
+# In docker-compose.yml, under insight-engine → environment:
+# Remove or comment out:
+# DATABASE_URL: postgresql://...
+```
+
+**Disable platform_events (gateway):**
+```yaml
+# In docker-compose.yml, under gateway-api → environment:
+# Remove or comment out:
+# DATABASE_URL: postgresql://...
+```
+
+The gateway events module gracefully no-ops when DATABASE_URL is absent.
+
+### Force CSV Reload (Insight Engine)
+
+If you update the CSV data files and want to reload into PostgreSQL:
+
+```bash
+docker compose exec insight-engine \
+  sh -c "INSIGHT_FORCE_RELOAD=true python -c 'from src.data_loader.loader import force_reload; force_reload()'"
+```
+
+Or restart with the env var set:
+```yaml
+environment:
+  INSIGHT_FORCE_RELOAD: "true"
+```
+
+---
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and configure.
@@ -143,13 +243,17 @@ Copy `.env.example` to `.env` and configure.
 | `LLM_PROVIDER` | `demo` | LLM backend: `demo`, `rule_based`, `openai`, `anthropic`, `ollama` |
 | `OPENAI_API_KEY` | (empty) | Required for OpenAI LLM features |
 | `ANTHROPIC_API_KEY` | (empty) | Required for Anthropic LLM features |
+| `INSIGHT_FORCE_RELOAD` | `false` | Force Insight Engine CSV reload into PostgreSQL on startup |
+| `EVENTS_RETENTION_DAYS` | `30` | Retain platform_events rows for this many days (Phase 4A) |
+| `GRAFANA_USER` | `admin` | Grafana admin username (monitoring profile only) |
+| `GRAFANA_PASSWORD` | `neuroops2024` | Grafana admin password — **change in production** |
 
 ---
 
 ## Health Verification
 
 ```bash
-# Gateway health
+# Gateway health (includes events_db status, Phase 4 version)
 curl http://localhost:8000/health
 
 # Platform intelligence summary (alerts, anomalies, health)
@@ -160,6 +264,17 @@ curl http://localhost:8000/platform/alerts
 
 # Lightweight metrics JSON
 curl http://localhost:8000/metrics
+
+# Phase 4F: Prometheus text-format metrics
+curl http://localhost:8000/metrics/prometheus
+
+# Phase 4A: Manual events cleanup (admin)
+curl -X POST "http://localhost:8000/platform/events/cleanup"
+# With custom retention window:
+curl -X POST "http://localhost:8000/platform/events/cleanup?retention_days=7"
+
+# Phase 4D: Platform events stream
+curl http://localhost:8000/platform/events | python3 -m json.tool
 
 # All container status
 make status
@@ -180,9 +295,9 @@ docker compose ps
 | Live Control API | 8003 | Via nginx at `/api/live-control/` |
 | Incident Replay API | 8004 | Via nginx at `/api/incident-replay/` |
 | Warehouse API | 8007 | Via nginx at `/api/warehouse/` |
-| Career Agent | 8511 | Via nginx at `/embed/career-agent/` |
-| Insight Engine | 8512 | Via nginx at `/embed/insight-engine/` |
-| Warehouse Copilot | 8513 | Via nginx at `/embed/warehouse-copilot/` |
+| Career Agent | 8501 (internal) | Via nginx at `/embed/career-agent/` |
+| Insight Engine | 8501 (internal) | Via nginx at `/embed/insight-engine/` |
+| Warehouse Copilot | 8501 (internal) | Via nginx at `/embed/warehouse-copilot/` |
 | PostgreSQL | 5432 | Internal only (configure firewall) |
 | n8n (optional) | 5678 | Via nginx if configured |
 

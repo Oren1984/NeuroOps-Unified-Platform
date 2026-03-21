@@ -2,7 +2,7 @@
 # NeuroOps Unified Platform — Development Override
 #
 # Usage:
-#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 #
 # What this file changes vs the main compose file:
 #   - frontend:        replaced with Vite dev server (npm run dev, port 5173)
@@ -12,10 +12,10 @@
 #   - warehouse-copilot: same — skip unless explicitly requested
 #
 # Light dev start (no warehouse AI/vector services):
-#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 #
 # Full dev start (includes warehouse):
-#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml \
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 #     --profile heavy up
 # =============================================================================
 

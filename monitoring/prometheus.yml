@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    platform: neuroops-unified
+
+rule_files: []
+
+alerting:
+  alertmanagers: []
+
+scrape_configs:
+  - job_name: "neuroops-gateway"
+    static_configs:
+      - targets: ["gateway-api:8000"]
+    metrics_path: "/metrics/prometheus"
+    scrape_interval: 15s

@@ -130,9 +130,9 @@ Each phase below represents a discrete analysis step: scanning existing systems,
 │  │  /api/live-control       → FastAPI :8003                         │   │
 │  │  /api/incident-replay    → FastAPI :8004                         │   │
 │  │  /api/warehouse          → FastAPI :8007                         │   │
-│  │  /embed/career-agent     → Streamlit :8511                       │   │
-│  │  /embed/insight          → Streamlit :8512                       │   │
-│  │  /embed/warehouse        → Streamlit :8513                       │   │
+│  │  /embed/career-agent     → Streamlit :8501                       │   │
+│  │  /embed/insight          → Streamlit :8501                       │   │
+│  │  /embed/warehouse        → Streamlit :8501                       │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                              │                                           │
 │  ┌───────────────────────────▼──────────────────────────────────────┐   │
@@ -161,8 +161,8 @@ Each phase below represents a discrete analysis step: scanning existing systems,
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │                      Streamlit Services                          │   │
 │  │                                                                  │   │
-│  │  career-agent    :8511  │  insight-engine  :8512                 │   │
-│  │  warehouse-copilot :8513                                         │   │
+│  │  career-agent    :8501  │  insight-engine  :8501                 │   │
+│  │  warehouse-copilot :8501                                         │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
@@ -330,7 +330,7 @@ services:
 - Verify simulation engine and decision engine start correctly
 
 **Step 7 — Embed Streamlit modules** *(Career Agent, Insight Engine, Warehouse Copilot)*
-- Add 3 Streamlit containers to docker-compose on ports `8511`, `8512`, `8513`
+- Add 3 Streamlit containers to docker-compose (each on internal port `8501`, Docker-network-only)
 - Build `EmbedFrame.jsx` component with loading state and error boundary
 - Create iframe module pages in unified frontend
 - Configure Nginx to proxy `/embed/*` paths

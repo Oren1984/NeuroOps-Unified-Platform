@@ -6,15 +6,71 @@ This document explains every architectural and implementation decision made duri
 
 ## Summary Table
 
-| Project | Integration Method | Reason | Status |
+| Project | Integration Method | DB Layer | Status |
 |---|---|---|---|
-| NeuroOps-Autopilot-System | Direct React + API proxy | React/FastAPI — fully composable | Integrated |
-| NeuroOps-Control-Room-System | Direct React + API proxy | React/FastAPI — fully composable | Integrated |
-| NeuroOps-live-Control-System | Direct React + API proxy | React/FastAPI — fully composable | Integrated |
-| NeuroOps-Incident-Replay-System | Direct React (TS) + API proxy | React/FastAPI — fully composable | Integrated |
-| NeuroOps-Career-Agent-System | iframe embed | Streamlit — not directly composable | Embedded |
-| NeuroOps-Insight-Engine-System | iframe embed | Streamlit — not directly composable | Embedded |
-| NeuroOps-Warehouse-Copilot-System | iframe embed | Streamlit — not directly composable | Embedded |
+| NeuroOps-Autopilot-System | Direct React + API proxy | PostgreSQL (autopilot schema) | Integrated |
+| NeuroOps-Control-Room-System | Direct React + API proxy | PostgreSQL (control_room schema) | Integrated |
+| NeuroOps-live-Control-System | Direct React + API proxy | Stateless (no DB) | Integrated |
+| NeuroOps-Incident-Replay-System | Direct React (TS) + API proxy | JSON flat files | Integrated |
+| NeuroOps-Career-Agent-System | iframe embed | **PostgreSQL (career_agent schema) — Phase 3A** | Embedded |
+| NeuroOps-Insight-Engine-System | iframe embed | **PostgreSQL (insight_engine schema) — Phase 3B** | Embedded |
+| NeuroOps-Warehouse-Copilot-System | iframe embed | SQLite + ChromaDB | Embedded |
+
+---
+
+## Phase 3 — DB Unification Integration Record (2026-03-21)
+
+### Decision: Option B + Option C (Partial PostgreSQL Unification + Shared Event Layer)
+
+**Rationale:**
+- Full unification would require rewriting ChromaDB (warehouse vector search), breaking semantic search
+- Incident Replay JSON is small, correct, and fast — no PostgreSQL benefit
+- Live Control is stateless by design — adding DB changes its fundamental architecture
+- Career Agent and Insight Engine have clear SQLite→PostgreSQL migration paths with minimal risk
+
+### Career Agent Migration (Phase 3A)
+
+**Integration change (inside unified platform only):**
+- `session.py`: PostgreSQL engine added. SQLite still supported as fallback.
+- `init_db.py`: V2 ALTER TABLE migrations now skipped for PostgreSQL (handled by `create_all`).
+- `requirements.txt`: Added `psycopg2-binary`.
+- New `migrate_sqlite_to_postgres.py`: one-time idempotent migration script.
+- `docker-compose.yml`: `DATABASE_URL` added for career-agent, `depends_on: postgres`.
+
+**What was NOT changed:**
+- All job collection logic, scoring logic, dedup logic
+- All Streamlit UI components and business logic
+- Data model (Job, Score, StatusHistory — all fields preserved)
+- SQLite fallback path (remove DATABASE_URL to revert)
+
+### Insight Engine Migration (Phase 3B)
+
+**Integration change (inside unified platform only):**
+- `loader.py`: Complete rewrite — SQLite replaced with PostgreSQL + idempotent init.
+- `config.py`: `DATABASE_URL` config added.
+- `agent.py`: SQL rewritten for PostgreSQL (SQLite `datetime()` → `INTERVAL '7 days'`).
+- `dashboard.py`: `init_sqlite()` → `init_db()` call.
+- `requirements.txt`: Added `sqlalchemy`, `psycopg2-binary`.
+- `docker-compose.yml`: `DATABASE_URL` added for insight-engine, `depends_on: postgres`.
+
+**What was NOT changed:**
+- All CSV source files (remain source of truth)
+- All analytics functions (`analytics.py`, `auto_insights.py`, `executive_summary.py`)
+- All Streamlit UI tabs and visualizations
+- RAG, LLM provider, n8n integration — unchanged
+- SQLite fallback (remove DATABASE_URL to revert)
+
+### Platform Events Layer (Phase 3C)
+
+**New shared infrastructure:**
+- `platform_events` table in PostgreSQL public schema
+- `services/gateway-api/app/events.py`: async publisher + reader module
+- Gateway-api publishes on startup, shutdown, and every service state transition
+- `/platform/events` merges DB events + live service events
+- `/platform/alerts` enriched with DB-sourced warning/critical events
+- Gateway gracefully no-ops when DB unavailable (`_DB_AVAILABLE` flag)
+
+**This is purely additive — no existing endpoints changed in behavior.**
 
 ---
 

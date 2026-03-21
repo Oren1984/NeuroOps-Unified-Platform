@@ -9,6 +9,7 @@ import IncidentReplayPage from '../modules/incident-replay/index.jsx'
 import CareerAgentPage from '../modules/career-agent/CareerAgentPage.jsx'
 import InsightEnginePage from '../modules/insight-engine/InsightEnginePage.jsx'
 import WarehouseCopilotPage from '../modules/warehouse-copilot/WarehouseCopilotPage.jsx'
+import EventsPage from '../modules/events/EventsPage.jsx'
 import LoginPage from '../modules/login/LoginPage.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 
@@ -49,6 +50,7 @@ export default function AppRouter() {
                 <Route path="/career-agent"      element={<CareerAgentPage />} />
                 <Route path="/insight-engine"    element={<InsightEnginePage />} />
                 <Route path="/warehouse-copilot" element={<WarehouseCopilotPage />} />
+                <Route path="/events"           element={<EventsPage />} />
               </Routes>
             </AppShell>
           </ProtectedRoute>

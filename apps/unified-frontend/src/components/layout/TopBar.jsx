@@ -12,6 +12,7 @@ const ROUTE_LABELS = {
   '/career-agent':      'Career Agent',
   '/insight-engine':    'Insight Engine',
   '/warehouse-copilot': 'Warehouse Copilot',
+  '/about':             'Platform Overview',
 }
 
 function healthColor(score) {

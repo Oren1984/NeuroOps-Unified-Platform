@@ -2,7 +2,7 @@ import React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard, MonitorCheck, Activity,
-  RefreshCcw, Briefcase, BarChart2, Package, Zap
+  RefreshCcw, Briefcase, BarChart2, Package, Zap, Info
 } from 'lucide-react'
 
 const MODULES = [
@@ -70,6 +70,14 @@ const MODULES = [
     color: '#39c5cf',
     description: 'Live event stream',
     badge: 'LIVE',
+  },
+  {
+    id: 'about',
+    label: 'Platform Overview',
+    path: '/about',
+    icon: Info,
+    color: '#6e7681',
+    description: 'About this platform',
   },
 ]
 

@@ -253,7 +253,7 @@ function EventsMiniPanel({ navigate }) {
     let cancelled = false
     const fetch_ = async () => {
       try {
-        const token = localStorage.getItem('neuroops_token')
+        const token = localStorage.getItem('neuroops_access_token')
         const res = await fetch('/api/gateway/platform/events', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         })

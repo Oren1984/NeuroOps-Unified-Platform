@@ -6,6 +6,9 @@ export default function EmbedFrame({ src, title, minHeight = '700px' }) {
   const [error, setError] = useState(false)
   const iframeRef = useRef(null)
 
+  // Ensure src always ends with "/" so nginx correctly matches the embed location block
+  const normalizedSrc = src.endsWith('/') ? src : `${src}/`
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{
@@ -19,7 +22,7 @@ export default function EmbedFrame({ src, title, minHeight = '700px' }) {
           <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</span>
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>— Embedded Service</span>
         </div>
-        <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <a href={normalizedSrc} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
           <ExternalLink size={13} />
           <span style={{ fontSize: 'var(--text-xs)' }}>Open standalone</span>
         </a>
@@ -39,7 +42,7 @@ export default function EmbedFrame({ src, title, minHeight = '700px' }) {
           <span style={{ fontSize: 'var(--text-sm)', textAlign: 'center', maxWidth: 400 }}>
             The {title} service could not be reached. Ensure Docker services are running and the service is healthy.
           </span>
-          <button onClick={() => { setError(false); setLoading(true); if (iframeRef.current) iframeRef.current.src = src }}
+          <button onClick={() => { setError(false); setLoading(true); if (iframeRef.current) iframeRef.current.src = normalizedSrc }}
             style={{ padding: '8px 16px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 'var(--text-sm)' }}>
             Retry
           </button>
@@ -48,7 +51,7 @@ export default function EmbedFrame({ src, title, minHeight = '700px' }) {
 
       <iframe
         ref={iframeRef}
-        src={error ? undefined : src}
+        src={error ? undefined : normalizedSrc}
         title={title}
         onLoad={() => setLoading(false)}
         onError={() => { setLoading(false); setError(true) }}

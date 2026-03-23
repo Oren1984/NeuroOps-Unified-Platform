@@ -11,7 +11,7 @@ export default function WarehouseCopilotPage() {
         </p>
       </div>
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <EmbedFrame src="/embed/warehouse-copilot" title="Warehouse Copilot" />
+        <EmbedFrame src="/embed/warehouse-copilot/" title="Warehouse Copilot" />
       </div>
     </div>
   )

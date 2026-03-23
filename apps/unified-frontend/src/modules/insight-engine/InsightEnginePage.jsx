@@ -11,7 +11,7 @@ export default function InsightEnginePage() {
         </p>
       </div>
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <EmbedFrame src="/embed/insight-engine" title="Insight Engine" />
+        <EmbedFrame src="/embed/insight-engine/" title="Insight Engine" />
       </div>
     </div>
   )

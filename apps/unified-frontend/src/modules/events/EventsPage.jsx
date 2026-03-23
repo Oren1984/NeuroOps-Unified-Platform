@@ -207,7 +207,7 @@ export default function EventsPage() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const token = localStorage.getItem('neuroops_token')
+      const token = localStorage.getItem('neuroops_access_token')
       const res = await fetch(API_URL, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })

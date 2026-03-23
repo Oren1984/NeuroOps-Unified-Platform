@@ -11,7 +11,7 @@ export default function CareerAgentPage() {
         </p>
       </div>
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <EmbedFrame src="/embed/career-agent" title="Career Agent" />
+        <EmbedFrame src="/embed/career-agent/" title="Career Agent" />
       </div>
     </div>
   )

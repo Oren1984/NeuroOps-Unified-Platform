@@ -29,7 +29,7 @@ It replicates the UI, navigation, and experience of the platform without requiri
 
 ## How to Run Locally
 
-### Option 1 – Open directly
+### Option – Open directly
 
 Open the file in your browser:
 
@@ -37,18 +37,7 @@ Open the file in your browser:
 static-demo/index.html
 ```
 
-### Option 2 – Local server (recommended)
-
-```bash
-cd static-demo
-python -m http.server 8080
-```
-
-Then open:
-
-```
-http://localhost:8080
-```
+---
 
 ## Deployment
 

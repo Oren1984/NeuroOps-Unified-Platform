@@ -48,6 +48,12 @@
       'dollar-sign':       '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
       'box':               '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
       'warehouse':         '<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="8" height="12" x="8" y="10"/>',
+      'book-open':         '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+      'terminal':          '<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>',
+      'link-2':            '<path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/>',
+      'globe':             '<circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+      'lock':              '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      'sparkles':          '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>',
     };
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:inline-block;vertical-align:middle">${p[name] || ''}</svg>`;
   }
@@ -129,6 +135,18 @@
   function navigate(route) {
     window.location.hash = route;
   }
+  function moduleIcon(id) {
+    var map = {
+      'control-room':      'monitor-check',
+      'live-control':      'activity',
+      'incident-replay':   'refresh-ccw',
+      'career-agent':      'briefcase',
+      'insight-engine':    'bar-chart-2',
+      'warehouse-copilot': 'package',
+      'rag-platform':      'book-open',
+    };
+    return map[id] || 'layers';
+  }
 
   // ============================================================
   // SIDEBAR
@@ -141,6 +159,7 @@
     { id: 'career-agent',     label: 'Career Agent',     icon: 'briefcase',        color: '#db6d28', desc: 'AI job discovery' },
     { id: 'insight-engine',   label: 'Insight Engine',   icon: 'bar-chart-2',      color: '#1f6feb', desc: 'Business intelligence' },
     { id: 'warehouse-copilot',label: 'Warehouse Copilot',icon: 'package',          color: '#3fb950', desc: 'Warehouse ops AI' },
+    { id: 'rag-platform',     label: 'RAG Platform',     icon: 'book-open',        color: '#14b8a6', desc: 'Knowledge retrieval' },
     { id: 'events',           label: 'Platform Events',  icon: 'zap',              color: '#39c5cf', desc: 'Live event stream', badge: 'LIVE' },
     { id: 'about',            label: 'Platform Overview',icon: 'info',             color: '#6e7681', desc: 'About this platform' },
   ];
@@ -190,6 +209,7 @@
     'career-agent':     'Career Agent',
     'insight-engine':   'Insight Engine',
     'warehouse-copilot':'Warehouse Copilot',
+    'rag-platform':     'RAG Platform',
     'events':           'Platform Events',
     'about':            'Platform Overview',
   };
@@ -263,7 +283,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:4px">
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:32px;height:32px;border-radius:8px;background:${m.color}22;display:flex;align-items:center;justify-content:center">
-              ${icon(MOCK.modules.indexOf(m) === 0 ? 'monitor-check' : MOCK.modules.indexOf(m) === 1 ? 'activity' : MOCK.modules.indexOf(m) === 2 ? 'refresh-ccw' : MOCK.modules.indexOf(m) === 3 ? 'briefcase' : MOCK.modules.indexOf(m) === 4 ? 'bar-chart-2' : 'package', 15, m.color)}
+              ${icon(moduleIcon(m.id), 15, m.color)}
             </div>
             <span style="font-size:var(--text-base);font-weight:600;color:var(--text-primary)">${m.label}</span>
           </div>
@@ -313,7 +333,6 @@
     }).join('');
 
     return `<div class="module-page animate-fade-in">
-      <style>@keyframes pulse-dot{0%{transform:scale(1);opacity:.45}100%{transform:scale(2.6);opacity:0}}</style>
 
       <!-- Header -->
       <div class="module-header">
@@ -395,8 +414,8 @@
       const sc = statusColor(inc.severity);
       return `<div class="card" style="margin-bottom:12px;border-left:3px solid ${sc}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
               <span style="font-size:11px;font-family:var(--font-mono);color:${sc};font-weight:700">${inc.id}</span>
               ${badge(inc.severity)}
               ${badge(inc.status)}
@@ -437,7 +456,7 @@
             <p style="font-size:var(--text-sm);color:var(--text-secondary)">AI-powered incident intelligence &amp; dependency monitoring</p>
           </div>
         </div>
-        <div style="display:flex;gap:10px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
           ${metricCard('Open Incidents', `${d.incidents.filter(i=>i.status!=='resolved').length}`, '#d29922', 'Needs attention', 'alert-triangle')}
           ${metricCard('Resolved Today', `${d.incidents.filter(i=>i.status==='resolved').length}`,  '#3fb950', 'Last 24 hours',   'check-circle')}
         </div>
@@ -452,10 +471,12 @@
         <div class="card-title" style="display:flex;align-items:center;gap:8px">
           ${icon('git-branch', 13, '#d29922')} Service Dependencies
         </div>
-        <table class="data-table">
-          <thead><tr><th>From</th><th>To</th><th>Status</th><th>Latency</th></tr></thead>
-          <tbody>${depRows}</tbody>
-        </table>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>From</th><th>To</th><th>Status</th><th>Latency</th></tr></thead>
+            <tbody>${depRows}</tbody>
+          </table>
+        </div>
       </div>
     </div>`;
   }
@@ -956,7 +977,7 @@
       return `<div class="card" style="border-left:3px solid ${m.color}">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <div style="width:32px;height:32px;border-radius:8px;background:${m.color}22;display:flex;align-items:center;justify-content:center">
-            ${icon(m.id==='control-room'?'monitor-check':m.id==='live-control'?'activity':m.id==='incident-replay'?'refresh-ccw':m.id==='career-agent'?'briefcase':m.id==='insight-engine'?'bar-chart-2':'package', 15, m.color)}
+            ${icon(moduleIcon(m.id), 15, m.color)}
           </div>
           <div>
             <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-primary)">${m.label}</div>
@@ -995,8 +1016,9 @@
         </div>
         <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;max-width:720px">
           NeuroOps is a full-stack AI operations platform that unifies incident management, real-time monitoring,
-          business intelligence, career automation, and warehouse logistics into a single control surface.
-          Each module is independently deployable and communicates through a central Gateway API.
+          business intelligence, knowledge retrieval, career automation, and warehouse logistics into a single
+          control surface. Each module is independently deployable, connected through a central Gateway API,
+          and enriched by a shared RAG intelligence layer for context-aware AI across the entire ecosystem.
         </p>
       </div>
 
@@ -1014,10 +1036,215 @@
       </div>
 
       <div class="grid-3">
-        ${metricCard('Total Modules',  '6',                   '#1f6feb', 'Independently deployed',    'layers')}
-        ${metricCard('API Services',   '7',                   '#3fb950', 'Including gateway',         'server')}
-        ${metricCard('Platform Uptime',MOCK.platform.uptime,  '#bc8cff', 'Current run',               'activity')}
+        ${metricCard('Platform Modules', `${MOCK.modules.length}`,    '#1f6feb', 'Independently deployed',    'layers')}
+        ${metricCard('API Services',     '8',                         '#3fb950', 'Including gateway',         'server')}
+        ${metricCard('Platform Uptime',  MOCK.platform.uptime,        '#bc8cff', 'Current run',               'activity')}
       </div>
+    </div>`;
+  }
+
+  // ============================================================
+  // PAGE — RAG PLATFORM
+  // ============================================================
+  function pageRagPlatform() {
+    var d     = MOCK.ragPlatform;
+    var color = '#14b8a6';
+
+    // Capability cards
+    var capCards = d.capabilities.map(function(c) {
+      return `<div class="capability-card" style="border-color:${c.color}22"
+          onmouseover="this.style.borderColor='${c.color}55';this.style.boxShadow='0 8px 28px ${c.color}14'"
+          onmouseout="this.style.borderColor='${c.color}22';this.style.boxShadow='none'">
+        <div class="capability-card-accent" style="background:linear-gradient(90deg,${c.color},${c.color}44)"></div>
+        <div style="display:flex;align-items:center;gap:10px;padding-top:4px">
+          <div style="width:32px;height:32px;border-radius:8px;background:${c.color}1e;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${icon(c.icon, 15, c.color)}
+          </div>
+          <div style="font-size:var(--text-sm);font-weight:600;color:var(--text-primary)">${c.title}</div>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.65;margin:0">${c.desc}</p>
+      </div>`;
+    }).join('');
+
+    // Architecture pipeline nodes
+    var archDefs = [
+      { icn: 'user',         lbl: 'User Query',   col: '#e6edf3' },
+      { icn: 'cpu',          lbl: 'Embedding',    col: '#bc8cff' },
+      { icn: 'database',     lbl: 'Vector Search',col: '#14b8a6' },
+      { icn: 'layers',       lbl: 'Context',      col: '#1f6feb' },
+      { icn: 'sparkles',     lbl: 'LLM Inference',col: '#d29922' },
+      { icn: 'check-circle', lbl: 'Response',     col: '#3fb950' },
+    ];
+    var archFlow = archDefs.map(function(n, i) {
+      var connector = i < archDefs.length - 1 ? `<div class="arch-connector">›</div>` : '';
+      return `<div class="arch-node" style="border-color:${n.col}28">
+        <div class="arch-node-icon" style="background:${n.col}18">${icon(n.icn, 14, n.col)}</div>
+        <div class="arch-node-label" style="color:${n.col}">${n.lbl}</div>
+      </div>${connector}`;
+    }).join('');
+
+    // API endpoints
+    var endpointHtml = d.endpoints.map(function(ep) {
+      var cls = 'api-method-' + ep.method.toLowerCase();
+      return `<div class="api-endpoint-row">
+        <span class="api-method-badge ${cls}">${ep.method}</span>
+        <div style="min-width:0;flex:1">
+          <div class="api-path">${ep.path}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4">${ep.desc}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Security features
+    var secFeatures = [
+      { icn: 'shield-check', lbl: 'Audit Logging',      dsc: 'Every query logged with user identity, timestamp, and source citations' },
+      { icn: 'lock',         lbl: 'Source Attribution', dsc: 'All responses carry verifiable knowledge source references' },
+      { icn: 'user',         lbl: 'Access Controls',    dsc: 'Role-based permissions on knowledge sources and query scopes' },
+      { icn: 'cpu',          lbl: 'Query Sandboxing',   dsc: 'Isolated execution environment prevents prompt injection vectors' },
+      { icn: 'check-circle', lbl: 'Smoke Tests',        dsc: 'Automated regression and health tests on every deployment' },
+    ];
+    var securityHtml = secFeatures.map(function(f) {
+      return `<div class="security-feature">
+        <div style="width:26px;height:26px;border-radius:6px;background:${color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${icon(f.icn, 13, color)}
+        </div>
+        <div style="min-width:0">
+          <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-primary)">${f.lbl}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:1px;line-height:1.4">${f.dsc}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Provider grid
+    var providerHtml = d.providers.map(function(p) {
+      return `<div>
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:var(--space-2)">${p.category}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${p.items.map(function(item) { return `<span class="provider-chip">${item}</span>`; }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    // Ecosystem role
+    var ecosystemHtml = d.ecosystemRole.map(function(e) {
+      var mod      = MOCK.modules.find(function(m) { return m.label === e.module; });
+      var modColor = mod ? mod.color : '#6e7681';
+      var modIcon  = mod ? moduleIcon(mod.id) : 'layers';
+      return `<div class="ecosystem-role-item">
+        <div style="width:28px;height:28px;border-radius:6px;background:${modColor}1e;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${icon(modIcon, 13, modColor)}
+        </div>
+        <div style="min-width:0">
+          <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-primary);margin-bottom:2px">${e.module}</div>
+          <div style="font-size:10px;color:var(--text-muted);line-height:1.5">${e.desc}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Deployment items
+    var deployItems = [
+      { lbl: 'Docker-Based',   icn: 'package',    col: color      },
+      { lbl: 'Env-Var Config', icn: 'cpu',        col: '#1f6feb'  },
+      { lbl: 'CI Pipeline',    icn: 'git-branch', col: '#bc8cff'  },
+      { lbl: 'API-Only',       icn: 'terminal',   col: '#d29922'  },
+    ];
+    var deployHtml = deployItems.map(function(dep) {
+      return `<div style="display:flex;align-items:center;gap:10px;padding:var(--space-3);border:1px solid var(--border);border-radius:var(--radius);background:rgba(255,255,255,0.015)">
+        <div style="width:30px;height:30px;border-radius:6px;background:${dep.col}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${icon(dep.icn, 14, dep.col)}
+        </div>
+        <span style="font-size:var(--text-xs);font-weight:600;color:var(--text-secondary)">${dep.lbl}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="module-page animate-fade-in">
+
+      <!-- ── Header ── -->
+      <div class="module-header">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:44px;height:44px;border-radius:11px;background:${color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px ${color}33">
+            ${icon('book-open', 22, color)}
+          </div>
+          <div>
+            <h1 style="font-size:var(--text-2xl);font-weight:700;color:var(--text-primary);margin-bottom:3px">NeuroOps – RAG Platform</h1>
+            <p style="font-size:var(--text-sm);color:var(--text-secondary)">Secure knowledge retrieval &nbsp;·&nbsp; Context enrichment &nbsp;·&nbsp; Intelligent agent workflows</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 16px;background:${color}12;border:1px solid ${color}40;border-radius:20px;box-shadow:0 0 14px ${color}18">
+          ${pulseDot(color, 7, true)}
+          <span style="font-size:12px;font-weight:700;color:${color};font-family:var(--font-mono);letter-spacing:.05em">PRODUCTION READY</span>
+        </div>
+      </div>
+
+      <!-- ── Metrics Strip ── -->
+      <div class="grid-4">
+        ${metricCard('Queries / Hour',     d.stats.queriesHour.toLocaleString(), color,    'Last 60 minutes',       'bar-chart-2')}
+        ${metricCard('Avg Latency',        `${d.stats.avgLatencyMs}ms`,          '#1f6feb','End-to-end inference',  'activity')}
+        ${metricCard('Knowledge Sources',  `${d.stats.knowledgeSources}`,        '#bc8cff','Indexed corpora',       'database')}
+        ${metricCard('Uptime',             `${d.stats.uptimePct}%`,              '#3fb950','Current deployment',    'shield-check')}
+      </div>
+
+      <!-- ── Core Capabilities ── -->
+      <div>
+        <div class="section-header">
+          <div class="section-header-accent" style="background:${color}"></div>
+          <h2 style="font-size:var(--text-base);font-weight:600;color:var(--text-primary)">Core Capabilities</h2>
+        </div>
+        <div class="grid-3">${capCards}</div>
+      </div>
+
+      <!-- ── Inference Pipeline ── -->
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-4)">
+          ${icon('cpu', 13, color)} Inference Pipeline
+          <span style="margin-left:auto;font-size:10px;color:var(--text-muted);font-weight:400;letter-spacing:0">End-to-end retrieval-augmented generation flow</span>
+        </div>
+        <div class="arch-flow">${archFlow}</div>
+      </div>
+
+      <!-- ── API Surface + Security ── -->
+      <div class="grid-2" style="align-items:start">
+        <div class="card">
+          <div class="card-title" style="display:flex;align-items:center;gap:8px">
+            ${icon('terminal', 13, '#1f6feb')} API Surface
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">${endpointHtml}</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="display:flex;align-items:center;gap:8px">
+            ${icon('shield-check', 13, color)} Security &amp; Control
+          </div>
+          ${securityHtml}
+        </div>
+      </div>
+
+      <!-- ── Providers & Integrations ── -->
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;gap:8px">
+          ${icon('link-2', 13, '#bc8cff')} Providers &amp; Integrations
+        </div>
+        <div class="grid-4" style="gap:var(--space-5)">${providerHtml}</div>
+      </div>
+
+      <!-- ── Ecosystem Role ── -->
+      <div>
+        <div class="section-header">
+          <div class="section-header-accent" style="background:${color}"></div>
+          <h2 style="font-size:var(--text-base);font-weight:600;color:var(--text-primary)">Ecosystem Role</h2>
+          <span style="font-size:var(--text-xs);color:var(--text-muted)">How RAG Platform powers the NeuroOps ecosystem</span>
+        </div>
+        <div class="grid-2" style="gap:var(--space-3)">${ecosystemHtml}</div>
+      </div>
+
+      <!-- ── Deployment Model ── -->
+      <div class="card" style="border-color:${color}33">
+        <div class="card-title" style="display:flex;align-items:center;gap:8px">
+          ${icon('server', 13, color)} Deployment Model
+          <span style="margin-left:auto;font-size:10px;color:var(--text-muted);font-weight:400">Single container · Zero external dependencies at boot</span>
+        </div>
+        <div class="grid-4" style="gap:var(--space-3)">${deployHtml}</div>
+      </div>
+
     </div>`;
   }
 
@@ -1032,6 +1259,7 @@
     'career-agent':     pageCareerAgent,
     'insight-engine':   pageInsightEngine,
     'warehouse-copilot':pageWarehouseCopilot,
+    'rag-platform':     pageRagPlatform,
     'events':           pageEvents,
     'about':            pageAbout,
   };
@@ -1044,11 +1272,19 @@
   function render() {
     const route = getRoute();
 
-    document.getElementById('sidebar').innerHTML      = renderSidebar(route);
-    document.getElementById('topbar').innerHTML       = renderTopBar(route);
-    document.getElementById('page-content').innerHTML = PAGES[route]();
+    try {
+      document.getElementById('sidebar').innerHTML      = renderSidebar(route);
+      document.getElementById('topbar').innerHTML       = renderTopBar(route);
+      document.getElementById('page-content').innerHTML = PAGES[route]();
+    } catch (err) {
+      console.error('[NeuroOps] Render error on route "' + route + '":', err);
+      document.getElementById('page-content').innerHTML =
+        `<div class="module-page"><div class="card" style="border-color:var(--red);padding:var(--space-8);text-align:center">
+          <div style="font-size:var(--text-lg);font-weight:700;color:var(--red);margin-bottom:8px">Render Error</div>
+          <div style="font-size:var(--text-sm);color:var(--text-secondary)">${err.message}</div>
+        </div></div>`;
+    }
 
-    // Start clock
     startClock();
   }
 

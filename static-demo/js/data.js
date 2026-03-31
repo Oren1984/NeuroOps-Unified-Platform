@@ -3,11 +3,11 @@
 
 const MOCK = {
   platform: {
-    health: 92,
+    health: 93,
     status: 'healthy',
     uptime: '14d 6h 42m',
-    totalServices: 7,
-    healthyServices: 6,
+    totalServices: 8,
+    healthyServices: 7,
     offlineServices: 0,
     degradedServices: 1,
     avgResponseMs: 124,
@@ -21,6 +21,7 @@ const MOCK = {
     { id: 'career-agent',      label: 'Career Agent',      color: '#db6d28', status: 'degraded', health: 71, responseMs: 456, trend: 'declining', description: 'AI-powered job discovery with semantic matching.' },
     { id: 'insight-engine',    label: 'Insight Engine',    color: '#1f6feb', status: 'healthy',  health: 95, responseMs: 142, trend: 'improving', description: 'Business intelligence with AI analytics and LLM Q&A.' },
     { id: 'warehouse-copilot', label: 'Warehouse Copilot', color: '#3fb950', status: 'healthy',  health: 91, responseMs: 167, trend: 'stable',    description: 'Intelligent warehouse operations with inventory risk detection.' },
+    { id: 'rag-platform',     label: 'RAG Platform',     color: '#14b8a6', status: 'healthy',  health: 97, responseMs: 340, trend: 'improving', description: 'AI-powered retrieval-augmented generation for secure knowledge retrieval and context enrichment.' },
   ],
 
   alerts: [
@@ -38,6 +39,8 @@ const MOCK = {
     { id: 'e6', type: 'deployment_complete',    service: 'platform',           severity: 'info',    message: 'Platform v4.0.0 deployment verified healthy across all nodes', time: '2h ago' },
     { id: 'e7', type: 'scaling_event',          service: 'live_control',       severity: 'info',    message: 'Auto-scaled Live Control to 3 replicas (load: 82%)',           time: '3h ago' },
     { id: 'e8', type: 'job_match_found',        service: 'career_agent',       severity: 'info',    message: 'High-confidence job match found: Sr. Platform Engineer (94%)', time: '4h ago' },
+    { id: 'e9', type: 'rag_query_processed',   service: 'rag_platform',        severity: 'info',    message: 'RAG query processed: 1,847 queries/hr — all sources healthy',   time: '5m ago' },
+    { id: 'e10',type: 'knowledge_index_update',service: 'rag_platform',        severity: 'info',    message: 'Knowledge corpus re-indexed successfully — 12 sources online',   time: '2h ago' },
   ],
 
   // ── Control Room ──────────────────────────────────────────
@@ -137,6 +140,43 @@ const MOCK = {
       { id: 'i1', type: 'opportunity', color: '#3fb950', text: 'Revenue per user increased 3.9% YoY. Upsell campaign converting at 2× industry average — consider expanding to enterprise tier.', confidence: 94 },
       { id: 'i2', type: 'risk',        color: '#f85149', text: 'Cohort analysis: 23% of users who onboarded in Q4 have not logged in for 14+ days. Churn risk elevated — trigger re-engagement flow.', confidence: 87 },
       { id: 'i3', type: 'trend',       color: '#1f6feb', text: 'Mobile session duration up 22% since UX redesign in Jan 2026. Driving overall average session time increase above forecast.', confidence: 91 },
+    ],
+  },
+
+  // ── RAG Platform ─────────────────────────────────────────────
+  ragPlatform: {
+    stats: {
+      queriesHour:      1847,
+      avgLatencyMs:     340,
+      knowledgeSources: 12,
+      uptimePct:        99.7,
+    },
+    capabilities: [
+      { id: 'retrieval',  title: 'Semantic Retrieval',    color: '#14b8a6', icon: 'search',       desc: 'Vector search across indexed knowledge bases using FAISS and Sentence Transformers with cosine similarity scoring and relevance ranking.' },
+      { id: 'enrichment', title: 'Context Enrichment',    color: '#1f6feb', icon: 'layers',       desc: 'Dynamic context window assembly with smart chunking, deduplication, and relevance-ranked passage selection before LLM inference.' },
+      { id: 'llm',        title: 'Pluggable LLM Layer',   color: '#bc8cff', icon: 'cpu',          desc: 'Provider-agnostic inference: OpenAI GPT-4o, Ollama, Anthropic Claude — hot-switchable via environment config, no code changes required.' },
+      { id: 'security',   title: 'Security-First Design', color: '#f85149', icon: 'shield-check', desc: 'Full audit logging, source attribution on every response, query sandboxing, and role-based access controls on all knowledge sources.' },
+      { id: 'automation', title: 'Automation Ready',      color: '#d29922', icon: 'zap',          desc: 'Native REST API with structured JSON responses, n8n workflow integration, and webhooks for embedding RAG into any operational pipeline.' },
+      { id: 'liveIntel',  title: 'Live Intelligence',     color: '#3fb950', icon: 'wifi',         desc: 'Optional real-time web enrichment for time-sensitive queries — augments indexed knowledge with live signals when required.' },
+    ],
+    endpoints: [
+      { method: 'POST', path: '/ask',     desc: 'Submit a natural language query — returns enriched LLM response with source citations and confidence score' },
+      { method: 'GET',  path: '/health',  desc: 'Service health check — returns liveness status and vector store connectivity' },
+      { method: 'GET',  path: '/ready',   desc: 'Kubernetes readiness probe — verifies all upstream dependencies are reachable' },
+      { method: 'POST', path: '/ingest',  desc: 'Index a new knowledge source or document corpus (admin-only, JWT protected)' },
+      { method: 'GET',  path: '/sources', desc: 'List all indexed knowledge bases with metadata, size, and last-updated timestamp' },
+    ],
+    providers: [
+      { category: 'LLM Providers', items: ['OpenAI GPT-4o', 'Anthropic Claude', 'Ollama'] },
+      { category: 'Vector Store',  items: ['FAISS', 'ChromaDB', 'Pinecone'] },
+      { category: 'Automation',    items: ['n8n', 'REST Webhooks', 'CI Pipeline'] },
+      { category: 'Observability', items: ['Prometheus', 'Audit Logs', 'Smoke Tests'] },
+    ],
+    ecosystemRole: [
+      { module: 'Insight Engine',    desc: 'Powers AI-generated insights and natural language Q&A over live business data' },
+      { module: 'Career Agent',      desc: 'Enriches semantic job matching with structured role requirement understanding' },
+      { module: 'Control Room',      desc: 'Provides contextual knowledge retrieval during active incident investigation' },
+      { module: 'Warehouse Copilot', desc: 'Supplies product and regulatory knowledge for intelligent inventory decisions' },
     ],
   },
 

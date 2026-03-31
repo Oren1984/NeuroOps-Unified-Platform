@@ -24,7 +24,8 @@
       "Bash(curl -s http://localhost/api/autopilot/api/events?limit=5)",
       "Bash(curl -s http://localhost/api/autopilot/api/services)",
       "Bash(curl -s http://localhost/api/autopilot/api/events?limit=3)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(node:*)"
     ]
   }
 }
